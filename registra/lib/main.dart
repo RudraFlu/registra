@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsBinding wb = WidgetsFlutterBinding.ensureInitialized();
@@ -12,7 +14,29 @@ Future<void> main() async {
   );
   runApp(const MyApp());
 }
-
+  IconData getIcon(String category) {
+  switch (category) {
+    case 'food':
+      return Icons.local_restaurant;
+    case 'transport':
+      return Icons.local_taxi;
+    case 'shopping':
+      return Icons.shopping_bag_outlined;
+    case 'entertainment':
+      return Icons.movie_creation_outlined;
+    case 'bills':
+      return Icons.receipt_long_outlined;
+    case 'health':
+      return Icons.medical_services_outlined;
+    default:
+      return Icons.category;
+  }
+}
+Future<dynamic> getSum() async {
+  final result = await supabase.rpc('get_monthly_total');
+  return result;
+}
+bool c=true;
 TextStyle stly = GoogleFonts.poppins(
   textStyle: TextStyle(color: Color(0xFF355872), fontSize: 16),
 );
@@ -40,6 +64,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'registra',
       theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
       home: const HomePage(),
@@ -55,7 +80,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+Future? _expensesFuture;
+Future? sum;
   @override
+void initState() {
+  super.initState();
+  _loadExpenses();
+  getSum();
+}
+Future<dynamic> getSum() async {
+  sum = supabase.rpc('get_monthly_total');
+  return sum;
+}
+void _loadExpenses() {
+  _expensesFuture = supabase
+      .from('expense_history')
+      .select()
+      .order('created_at', ascending: false);
+}
   Widget build(context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8F0),
@@ -78,11 +120,28 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => expensePage()),
+        onPressed: () async {
+          final result = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => expensePage()),
           );
+            if (result == true) {
+    setState(() {
+      _loadExpenses();
+      getSum();
+    });
+    toastification.show(
+  context: context,
+  title: Text('Expense Added!'),
+  description: Text('Expense is added successfully'),
+  type: ToastificationType.success,
+  backgroundColor: Color(0xFFF7F8F0),
+  foregroundColor: Color(0xFF355782),
+  alignment: Alignment.bottomCenter, 
+  autoCloseDuration: const Duration(seconds: 3),
+);
+  }
+
         },
         backgroundColor: Color(0xFF355872),
         icon: Icon(Icons.add, color: Color(0xFFF7F8F0)),
@@ -115,16 +174,58 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Column(
           children: [
-            //Divider(),
+            SizedBox(height: 10),
             FutureBuilder(
-              future: supabase
-                  .from('expense_history')
-                  .select()
-                  .order('created_at', ascending: false),
+              future: getSum(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return LinearProgressIndicator(color: Color(0xFF355782));
+                }
+                return RichText(
+                  text: TextSpan(
+                    style: stly,
+                    children: [
+                      TextSpan(
+                        text: "Total spent this month : ",
+                        style: GoogleFonts.poppins(
+                          textStyle: TextStyle(
+                            color: Color(0xFF355782),
+                            fontSize: 16,
+                          ),
+                          fontWeight: FontWeight(600),
+                        ),
+                      ),
+                      TextSpan(
+                        text: '₹ ${snapshot.data}',
+                        style: GoogleFonts.poppins(
+                          textStyle: TextStyle(
+                            color: Color.fromARGB(253, 144, 0, 210),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            Divider(),
+            FutureBuilder(
+              future: _expensesFuture,
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return CircularProgressIndicator(color: Color(0xFFF7F8F0));
-                final data = snapshot.data as List;
+                 if (snapshot.hasError) {
+    return Center(child: Text("Error loading data"));
+  }
+
+  final data = snapshot.data as List;
+
+  if (data.isEmpty) {
+    return Center(child: Text("Add expence and get started",style: GoogleFonts.poppins(
+      color: Color(0xFF355782),fontWeight: FontWeight(600),fontSize: 16
+    ),));
+  }
                 return Expanded(
                   child: ListView.separated(
                     itemCount: data.length,
@@ -136,28 +237,14 @@ class _HomePageState extends State<HomePage> {
                       } else {
                         col = Color.fromARGB(255, 17, 146, 0);
                       }
-                      IconData icon;
-                      if (item['category'] == "food") {
-                        icon = Icons.local_restaurant;
-                      } else if (item['category'] == "transport") {
-                        icon = Icons.local_taxi;
-                      } else if (item['category'] == "shopping") {
-                        icon = Icons.shopping_bag_outlined;
-                      } else if (item['category'] == "entertainment") {
-                        icon = Icons.movie_creation_outlined;
-                      } else if (item['category'] == "bills") {
-                        icon = Icons.receipt_long_outlined;
-                      } else if (item['category'] == "health") {
-                        icon = Icons.medical_services_outlined;
-                      } else {
-                        icon = Icons.category;
-                      }
+                      IconData icon = getIcon(item['category']);
+                      
                       DateTime date = DateTime.parse(item['created_at']);
                       String formatted =
                           "${date.day}/${date.month}/${date.year}";
                       return TweenAnimationBuilder(
                         tween: Tween<double>(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 1000 + (index * 100)),
+                        duration: Duration(milliseconds: 100 + (index * 10)),
                         curve: Curves.easeOut,
                         builder: (context, value, child) {
                           return Opacity(
@@ -217,6 +304,8 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+final _formKey = GlobalKey<FormState>();
+
 class expensePage extends StatefulWidget {
   expensePage({super.key});
 
@@ -231,8 +320,33 @@ class _expensePageState extends State<expensePage> {
       _selection = newSelect;
     });
   }
+  Object err="";
+  Future<bool> insert() async {
+     final note = noteController.text.trim();
+  final amount = double.tryParse(amountController.text);
+    try{await supabase.from('expense_history').insert({
+                   'note':note,
+                   'amount':amount,
+                   'category':selectedCategory.toLowerCase(),
+                   'type':_selection.elementAt(0).toLowerCase(), 
+                  });
+    noteController.clear();
+    amountController.clear();
 
-  @override
+return true;
+    }
+  catch (e) {
+    err=e;
+    return false;
+
+  }
+  }
+  final noteController = TextEditingController();
+final amountController = TextEditingController();
+  String selectedCategory = 'other';
+  TextStyle stly0=GoogleFonts.poppins(
+  textStyle: TextStyle(color: Color(0xFF355872),fontWeight: FontWeight(600), fontSize: 16),
+);
   Widget build(context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8F0),
@@ -252,46 +366,163 @@ class _expensePageState extends State<expensePage> {
           },
           icon: Icon(Icons.arrow_back),
         ),
-        title: Text("Add expense", style: stly),
+        title: Text(
+          "Add expense",
+          style: GoogleFonts.poppins(
+            textStyle: TextStyle(color: Colors.black, fontSize: 18),
+          ),
+        ),
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                final success = await insert();
+                if(!mounted) return;
+                if(success){
+                Navigator.pop(context,true);
+                }else{
+toastification.show(
+  context: context,
+  title: Text('Failed!'),
+  description: Text('error: ${err}'),
+  type: ToastificationType.error,
+  backgroundColor: Color(0xFFF7F8F0),
+  foregroundColor: Color(0xFF355782),
+  alignment: Alignment.bottomCenter, 
+  autoCloseDuration: const Duration(seconds: 3),);
+                }
+              }
             },
             icon: Icon(Icons.check),
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            SizedBox(height: 10),
-            SegmentedButton(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment<String>(
-                  value: "Personal",
-                  label: Text("Personal"),
-                ),
-                ButtonSegment<String>(value: "Group", label: Text("Group")),
-                ButtonSegment<String>(value: "Friend", label: Text("Friend")),
-              ],
-              style: SegmentedButton.styleFrom(
-                textStyle: GoogleFonts.poppins(
-                  textStyle: TextStyle(color: Color(0xFF355872), fontSize: 16),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(5)),
-                ),
-                backgroundColor: Colors.white,
-                selectedForegroundColor: Colors.white,
-                selectedBackgroundColor: Color(0xFF355782),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(height: 10),
+          SegmentedButton(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment<String>(
+                value: "Personal",
+                label: Text("Personal"),
               ),
-              selected: _selection,
-              onSelectionChanged: updateSelected,
+              ButtonSegment<String>(value: "Group", label: Text("Group")),
+              ButtonSegment<String>(value: "Friend", label: Text("Friend")),
+            ],
+            style: SegmentedButton.styleFrom(
+              textStyle: GoogleFonts.poppins(
+                textStyle: TextStyle(color: Color(0xFF355872), fontSize: 16),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(5)),
+              ),
+              backgroundColor: Color(0xFFF7F8F0),
+              selectedForegroundColor: Colors.white,
+              selectedBackgroundColor: Color(0xFF355782),
             ),
-          ],
-        ),
+            selected: _selection,
+            onSelectionChanged: updateSelected,
+          ),
+      
+          SizedBox(height: 10),
+      
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(getIcon(selectedCategory),color: Color(0xFF355782),),
+              SizedBox(width: 15,),
+              DropdownButton(items: [
+                        DropdownMenuItem(value: 'food', child: Text('Food',style: stly0,)),
+                        DropdownMenuItem(value: 'transport', child: Text('Transport',style: stly0,)),
+                        DropdownMenuItem(value: 'shopping', child: Text('Shopping',style: stly0)),
+                        DropdownMenuItem(value: 'entertainment', child: Text('Entertainment',style: stly0)),
+                        DropdownMenuItem(value: 'bills', child: Text('Bills',style: stly0)),
+                        DropdownMenuItem(value: 'health', child: Text('Health',style: stly0)),
+                        DropdownMenuItem(value: 'other', child: Text('Others',style: stly0)),
+              ],
+              value: selectedCategory,
+              onChanged: (value){
+                setState(() {
+                  selectedCategory = value!;
+                });
+              },
+              underline: SizedBox(),
+              dropdownColor: Color(0xFFF7F8F0),
+                          
+              ),
+            ],
+          ),
+          SizedBox(height: 15),
+          Form(
+            key: _formKey,
+            child: Center(
+              child: Column(
+                children: [
+                  TextFormField(
+                    decoration: InputDecoration(
+                      constraints: BoxConstraints(maxWidth: 250),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          style: BorderStyle.solid,
+                          color: Color(0xFF355782),
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                      ),
+                      hintStyle: stly,
+                      hintText: 'Note',
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    controller: noteController,
+                    style: stly0,
+                    validator: (String? value) {
+                      return (value == null || value.isEmpty)
+                          ? 'Add a note.'
+                          : null;
+                    },
+                  ),
+                  SizedBox(height: 15),
+                  TextFormField(
+                    decoration: InputDecoration(
+                      constraints: BoxConstraints(maxWidth: 250),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          style: BorderStyle.solid,
+                          color: Color(0xFF355782),
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                      ),
+                      hintStyle: stly,
+                      hintText: 'Amount',
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    controller: amountController,
+                    style: stly0,
+                    validator: (String? value) {
+                      if (value == null || value.isEmpty) {
+                        return 'enter amount.';
+                      }
+      
+                      final number = double.tryParse(value);
+                      if (number == null) {
+                        return 'Enter a valid number';
+                      }
+      
+                      if (number <= 0) {
+                        return 'Amount must be greater than 0';
+                      }
+      
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
