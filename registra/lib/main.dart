@@ -9,13 +9,15 @@ Future<void> main() async {
   WidgetsBinding wb = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: wb);
   await Supabase.initialize(
-  url: 'URL',
+    url: 'https://mlzcqwctqlrxmweajyeb.supabase.co',
 
- anonKey: 'KEY',
+    anonKey: 'sb_publishable_c6Sw_IAMCsdjIs380Y2ajA_xjZVVQX3',
   );
   runApp(const MyApp());
 }
-  IconData getIcon(String category) {
+
+bool show = true;
+IconData getIcon(String category) {
   switch (category) {
     case 'food':
       return Icons.local_restaurant;
@@ -33,11 +35,12 @@ Future<void> main() async {
       return Icons.category;
   }
 }
+
 Future<dynamic> getSum() async {
   final result = await supabase.rpc('get_monthly_total');
   return result;
 }
-bool c=true;
+
 TextStyle stly = GoogleFonts.poppins(
   textStyle: TextStyle(color: Color(0xFF355872), fontSize: 16),
 );
@@ -81,24 +84,45 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-Future? _expensesFuture;
-Future? sum;
+  Future? _expensesFuture;
+  Future? sum;
+  Offset tapPosition = Offset.zero;
   @override
-void initState() {
-  super.initState();
-  _loadExpenses();
-  getSum();
-}
-Future<dynamic> getSum() async {
-  sum = supabase.rpc('get_monthly_total');
-  return sum;
-}
-void _loadExpenses() {
-  _expensesFuture = supabase
-      .from('expense_history')
-      .select()
-      .order('created_at', ascending: false);
-}
+  void initState() {
+    super.initState();
+    _loadExpenses();
+    getSum();
+  }
+
+  Future<void> deleteExpense(int id) async {
+    await supabase.from('expense_history').delete().eq('id', id);
+    setState(() {
+      _loadExpenses();
+      toastification.show(
+        context: context,
+        title: Text('Expense Deleted!'),
+        description: Text('Expense is deleted successfully'),
+        type: ToastificationType.success,
+        backgroundColor: Color(0xFFF7F8F0),
+        foregroundColor: Color(0xFF355782),
+        alignment: Alignment.bottomCenter,
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+    });
+  }
+
+  Future<dynamic> getSum() async {
+    sum = supabase.rpc('get_monthly_total');
+    return sum;
+  }
+
+  void _loadExpenses() {
+    _expensesFuture = supabase
+        .from('expense_history')
+        .select()
+        .order('created_at', ascending: false);
+  }
+
   Widget build(context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8F0),
@@ -123,26 +147,25 @@ void _loadExpenses() {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => expensePage()),
+            context,
+            MaterialPageRoute(builder: (_) => expensePage()),
           );
-            if (result == true) {
-    setState(() {
-      _loadExpenses();
-      getSum();
-    });
-    toastification.show(
-  context: context,
-  title: Text('Expense Added!'),
-  description: Text('Expense is added successfully'),
-  type: ToastificationType.success,
-  backgroundColor: Color(0xFFF7F8F0),
-  foregroundColor: Color(0xFF355782),
-  alignment: Alignment.bottomCenter, 
-  autoCloseDuration: const Duration(seconds: 3),
-);
-  }
-
+          if (result == true) {
+            setState(() {
+              _loadExpenses();
+              getSum();
+            });
+            toastification.show(
+              context: context,
+              title: Text('Expense Added!'),
+              description: Text('Expense is added successfully'),
+              type: ToastificationType.success,
+              backgroundColor: Color(0xFFF7F8F0),
+              foregroundColor: Color(0xFF355782),
+              alignment: Alignment.bottomCenter,
+              autoCloseDuration: const Duration(seconds: 3),
+            );
+          }
         },
         backgroundColor: Color(0xFF355872),
         icon: Icon(Icons.add, color: Color(0xFFF7F8F0)),
@@ -180,7 +203,16 @@ void _loadExpenses() {
               future: getSum(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return LinearProgressIndicator(color: Color(0xFF355782));
+                  return Text(
+                    "Total spent this month: 0",
+                    style: GoogleFonts.poppins(
+                      textStyle: TextStyle(
+                        color: Color(0xFF355782),
+                        fontSize: 16,
+                      ),
+                      fontWeight: FontWeight(600),
+                    ),
+                  );
                 }
                 return RichText(
                   text: TextSpan(
@@ -216,17 +248,23 @@ void _loadExpenses() {
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return CircularProgressIndicator(color: Color(0xFFF7F8F0));
-                 if (snapshot.hasError) {
-    return Center(child: Text("Error loading data"));
-  }
+                if (snapshot.hasError) {
+                  return Center(child: Text("Error loading data"));
+                }
 
-  final data = snapshot.data as List;
-
-  if (data.isEmpty) {
-    return Center(child: Text("Add expence and get started",style: GoogleFonts.poppins(
-      color: Color(0xFF355782),fontWeight: FontWeight(600),fontSize: 16
-    ),));
-  }
+                final data = snapshot.data as List;
+                if (data.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "Add expence and get started",
+                      style: GoogleFonts.poppins(
+                        color: Color(0xFF355782),
+                        fontWeight: FontWeight(600),
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
+                }
                 return Expanded(
                   child: ListView.separated(
                     itemCount: data.length,
@@ -239,7 +277,7 @@ void _loadExpenses() {
                         col = Color.fromARGB(255, 17, 146, 0);
                       }
                       IconData icon = getIcon(item['category']);
-                      
+
                       DateTime date = DateTime.parse(item['created_at']);
                       String formatted =
                           "${date.day}/${date.month}/${date.year}";
@@ -256,36 +294,90 @@ void _loadExpenses() {
                             ),
                           );
                         },
-                        child: ListTile(
-                          tileColor: Color(0xFFF7F8F0),
-                          leading: Icon(
-                            icon,
-                            size: 30,
-                            color: Color(0xFF355872),
-                          ),
-                          title: Text(
-                            item['note'],
-                            style: GoogleFonts.poppins(
-                              textStyle: TextStyle(
-                                color: Color(0xFF355872),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+
+                        child: GestureDetector(
+                          onTapDown: (details) {
+                            tapPosition = details.globalPosition;
+                          },
+                          child: ListTile(
+                            onLongPress: () async {
+                              final selected = await showMenu(
+                                context: context,
+                                position: RelativeRect.fromLTRB(
+                                  tapPosition.dx,
+                                  tapPosition.dy,
+                                  tapPosition.dx,
+                                  tapPosition.dy,
+                                ),
+                                items: [
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Delete', style: stly),
+                                  ),
+                                ],
+                              );
+                              if (selected == 'delete') {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text(
+                                      'Delete Expense',
+                                      style: GoogleFonts.poppins(
+                                        textStyle: TextStyle(
+                                          color: Color(0xFF355872),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    content: Text('Are you sure?', style: stly),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('Cancel', style: stly),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          deleteExpense(item['id']);
+                                        },
+                                        child: Text('Delete', style: stly),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            },
+                            tileColor: Color(0xFFF7F8F0),
+                            leading: Icon(
+                              icon,
+                              size: 30,
+                              color: Color(0xFF355872),
+                            ),
+                            title: Text(
+                              item['note'],
+                              style: GoogleFonts.poppins(
+                                textStyle: TextStyle(
+                                  color: Color(0xFF355872),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          subtitle: Text(
-                            formatted,
-                            style: GoogleFonts.poppins(
-                              textStyle: TextStyle(
-                                color: Color(0xFF355872),
-                                fontSize: 12,
+                            subtitle: Text(
+                              formatted,
+                              style: GoogleFonts.poppins(
+                                textStyle: TextStyle(
+                                  color: Color(0xFF355872),
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                          ),
-                          trailing: Text(
-                            "₹${item['amount']}",
-                            style: GoogleFonts.poppins(
-                              textStyle: TextStyle(color: col, fontSize: 16),
+                            trailing: Text(
+                              "₹${item['amount']}",
+                              style: GoogleFonts.poppins(
+                                textStyle: TextStyle(color: col, fontSize: 16),
+                              ),
                             ),
                           ),
                         ),
@@ -321,33 +413,58 @@ class _expensePageState extends State<expensePage> {
       _selection = newSelect;
     });
   }
-  Object err="";
-  Future<bool> insert() async {
-     final note = noteController.text.trim();
-  final amount = double.tryParse(amountController.text);
-    try{await supabase.from('expense_history').insert({
-                   'note':note,
-                   'amount':amount,
-                   'category':selectedCategory.toLowerCase(),
-                   'type':_selection.elementAt(0).toLowerCase(), 
-                  });
-    noteController.clear();
-    amountController.clear();
 
-return true;
+  Future<void> _selectDate() async {
+   DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked !=null){
+      setState(() {
+        selectedDate = picked;
+        dateController.text = picked.toString().split(" ")[0];
+      });
+    }else{
+      dateController.text = DateTime.now().toString().split(" ")[0];
     }
-  catch (e) {
-    err=e;
-    return false;
+  }
+  DateTime? selectedDate=DateTime.now();
+  Object err = "";
+  Future<bool> insert() async {
+    final note = noteController.text.trim();
+    final amount = double.tryParse(amountController.text);
+    try {
+      await supabase.from('expense_history').insert({
+        'note': note,
+        'amount': amount,
+        'category': selectedCategory.toLowerCase(),
+        'type': _selection.elementAt(0).toLowerCase(),
+        'created_at':selectedDate?.toIso8601String(),
+      });
+      noteController.clear();
+      amountController.clear();
 
+      return true;
+    } catch (e) {
+      err = e;
+      return false;
+    }
   }
-  }
+  TextEditingController dateController = TextEditingController(
+    text:  "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}"
+  );
   final noteController = TextEditingController();
-final amountController = TextEditingController();
+  final amountController = TextEditingController();
   String selectedCategory = 'other';
-  TextStyle stly0=GoogleFonts.poppins(
-  textStyle: TextStyle(color: Color(0xFF355872),fontWeight: FontWeight(600), fontSize: 16),
-);
+  TextStyle stly0 = GoogleFonts.poppins(
+    textStyle: TextStyle(
+      color: Color(0xFF355872),
+      fontWeight: FontWeight(600),
+      fontSize: 16,
+    ),
+  );
   Widget build(context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8F0),
@@ -378,19 +495,20 @@ final amountController = TextEditingController();
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 final success = await insert();
-                if(!mounted) return;
-                if(success){
-                Navigator.pop(context,true);
-                }else{
-toastification.show(
-  context: context,
-  title: Text('Failed!'),
-  description: Text('error: ${err}'),
-  type: ToastificationType.error,
-  backgroundColor: Color(0xFFF7F8F0),
-  foregroundColor: Color(0xFF355782),
-  alignment: Alignment.bottomCenter, 
-  autoCloseDuration: const Duration(seconds: 3),);
+                if (!mounted) return;
+                if (success) {
+                  Navigator.pop(context, true);
+                } else {
+                  toastification.show(
+                    context: context,
+                    title: Text('Failed!'),
+                    description: Text('error: ${err}'),
+                    type: ToastificationType.error,
+                    backgroundColor: Color(0xFFF7F8F0),
+                    foregroundColor: Color(0xFF355782),
+                    alignment: Alignment.bottomCenter,
+                    autoCloseDuration: const Duration(seconds: 3),
+                  );
                 }
               }
             },
@@ -405,10 +523,7 @@ toastification.show(
           SegmentedButton(
             showSelectedIcon: false,
             segments: [
-              ButtonSegment<String>(
-                value: "Personal",
-                label: Text("Personal"),
-              ),
+              ButtonSegment<String>(value: "Personal", label: Text("Personal")),
               ButtonSegment<String>(value: "Group", label: Text("Group")),
               ButtonSegment<String>(value: "Friend", label: Text("Friend")),
             ],
@@ -426,34 +541,79 @@ toastification.show(
             selected: _selection,
             onSelectionChanged: updateSelected,
           ),
-      
+
           SizedBox(height: 10),
-      
+
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(getIcon(selectedCategory),color: Color(0xFF355782),),
-              SizedBox(width: 15,),
-              DropdownButton(items: [
-                        DropdownMenuItem(value: 'food', child: Text('Food',style: stly0,)),
-                        DropdownMenuItem(value: 'transport', child: Text('Transport',style: stly0,)),
-                        DropdownMenuItem(value: 'shopping', child: Text('Shopping',style: stly0)),
-                        DropdownMenuItem(value: 'entertainment', child: Text('Entertainment',style: stly0)),
-                        DropdownMenuItem(value: 'bills', child: Text('Bills',style: stly0)),
-                        DropdownMenuItem(value: 'health', child: Text('Health',style: stly0)),
-                        DropdownMenuItem(value: 'other', child: Text('Others',style: stly0)),
-              ],
-              value: selectedCategory,
-              onChanged: (value){
-                setState(() {
-                  selectedCategory = value!;
-                });
-              },
-              underline: SizedBox(),
-              dropdownColor: Color(0xFFF7F8F0),
-                          
+              Icon(getIcon(selectedCategory), color: Color(0xFF355782)),
+              SizedBox(width: 15),
+              DropdownButton(
+                items: [
+                  DropdownMenuItem(
+                    value: 'food',
+                    child: Text('Food', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'transport',
+                    child: Text('Transport', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'shopping',
+                    child: Text('Shopping', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'entertainment',
+                    child: Text('Entertainment', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'bills',
+                    child: Text('Bills', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'health',
+                    child: Text('Health', style: stly0),
+                  ),
+                  DropdownMenuItem(
+                    value: 'other',
+                    child: Text('Others', style: stly0),
+                  ),
+                ],
+                value: selectedCategory,
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value!;
+                  });
+                },
+                underline: SizedBox(),
+                dropdownColor: Color(0xFFF7F8F0),
               ),
             ],
+          ),
+          SizedBox(height: 15),
+          SizedBox(
+            width: 200,
+            child: TextField(
+              onTap: () {
+                _selectDate();
+              },
+              controller: dateController,
+              readOnly: true,
+              decoration: InputDecoration(
+                prefixIcon: Icon(
+                  Icons.calendar_month_outlined,
+                  color: Color(0xFF355782),
+                ),
+                hint: Text("Date", style: stly),
+                border: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Color(0xFF355782),
+                    style: BorderStyle.solid,
+                  ),
+                ),
+              ),
+            ),
           ),
           SizedBox(height: 15),
           Form(
@@ -504,18 +664,18 @@ toastification.show(
                     style: stly0,
                     validator: (String? value) {
                       if (value == null || value.isEmpty) {
-                        return 'enter amount.';
+                        return 'Enter amount.';
                       }
-      
+
                       final number = double.tryParse(value);
                       if (number == null) {
                         return 'Enter a valid number';
                       }
-      
+
                       if (number <= 0) {
                         return 'Amount must be greater than 0';
                       }
-      
+
                       return null;
                     },
                   ),
