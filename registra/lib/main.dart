@@ -9,9 +9,9 @@ Future<void> main() async {
   WidgetsBinding wb = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: wb);
   await Supabase.initialize(
-    url: 'https://mlzcqwctqlrxmweajyeb.supabase.co',
+    url: 'URL',
 
-    anonKey: 'sb_publishable_c6Sw_IAMCsdjIs380Y2ajA_xjZVVQX3',
+    anonKey: 'KEY',
   );
   runApp(const MyApp());
 }
