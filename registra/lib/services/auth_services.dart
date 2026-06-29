@@ -5,9 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 class AuthService {
   final supabase = Supabase.instance.client;
 
-  Future<String?> signUp(String email, String password) async {
+  Future<String?> signUp(String email, String password, String username) async {
     try {
-      await supabase.auth.signUp(email: email, password: password);
+      await supabase.auth.signUp(email: email, password: password,
+      data: {
+        'username': username,
+      },
+      );
       return null;
     } catch (e) {
       return e.toString();

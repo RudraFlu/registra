@@ -1,5 +1,5 @@
 name: registra
-description: "A new Flutter project."
+description: "Expense tracking application."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -40,6 +40,8 @@ dependencies:
   google_fonts: ^8.0.2
   google_sign_in: ^7.2.0
   google_sign_in_android: ^7.2.10
+  pinput: ^6.0.2
+  flutter_dotenv: ^6.0.1
 flutter_native_splash:
   # This package generates native code to customize Flutter's default white native splash screen
   # with background color and splash image.
@@ -215,6 +217,10 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/logo.png
+    - assets/images/cret.png
+    - assets/images/otp.png
+    - keys.env
+    
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:registra/login and register/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:toastification/toastification.dart';
 import 'package:registra/expensePage.dart';
 import 'package:registra/services/expense_service.dart';
-import 'package:registra/login.dart';
 
 Future<void> main() async {
   WidgetsBinding wb = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: wb);
-  await Supabase.initialize(
-  url: 'URL',
 
- anonKey: 'KEY',
+  
+  await dotenv.load(fileName: "keys.env");
+
+  await Supabase.initialize(
+  url: dotenv.env['Proj_url']!,
+    anonKey: dotenv.env['Proj_anonKey']!,
   );
   runApp(const MyApp());
 }
