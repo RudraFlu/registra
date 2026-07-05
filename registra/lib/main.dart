@@ -139,6 +139,7 @@ class _HomePageState extends State<HomePage> {
               getSum();
             });
             toastification.show(
+              // ignore: use_build_context_synchronously
               context: context,
               title: Text('Expense Added!'),
               description: Text('Expense is added successfully'),

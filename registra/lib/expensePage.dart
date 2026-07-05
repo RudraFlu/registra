@@ -102,12 +102,14 @@ class _expensePageState extends State<expensePage> {
                 final success = await insert();
                 if (!mounted) return;
                 if (success) {
+                  // ignore: use_build_context_synchronously
                   Navigator.pop(context, true);
                 } else {
                   toastification.show(
+                    // ignore: use_build_context_synchronously
                     context: context,
                     title: Text('Failed!'),
-                    description: Text('error: ${err}'),
+                    description: Text('error: $err'),
                     type: ToastificationType.error,
                     backgroundColor: Color(0xFFF7F8F0),
                     foregroundColor: Color(0xFF355782),
