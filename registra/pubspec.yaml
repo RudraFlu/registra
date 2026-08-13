@@ -42,6 +42,8 @@ dependencies:
   google_sign_in_android: ^7.2.10
   pinput: ^6.0.2
   flutter_dotenv: ^6.0.1
+  app_links: ^7.0.0
+  image_picker: ^1.2.3
 flutter_native_splash:
   # This package generates native code to customize Flutter's default white native splash screen
   # with background color and splash image.

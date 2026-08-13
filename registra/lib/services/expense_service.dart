@@ -19,6 +19,10 @@ IconData getIcon(String category) {
       return Icons.category;
   }
 }
+Future<dynamic> getSum() async {
+  final result = await supabase.rpc('get_monthly_total');
+  return result;
+}
 TextStyle stly = GoogleFonts.poppins(
   textStyle: TextStyle(color: Color(0xFF355872), fontSize: 16),
 );

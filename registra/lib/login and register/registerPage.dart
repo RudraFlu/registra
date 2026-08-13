@@ -74,6 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: Text("Invalid email format"),
         description: Text("Please enter a valid email address"),
         style: ToastificationStyle.minimal,
+        showProgressBar: true,
         type: ToastificationType.error,
         backgroundColor: Color(0xFFF7F8F0),
         foregroundColor: Color(0xFF355782),
@@ -94,6 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         autoCloseDuration: Duration(seconds: 3),
         context: context,
         foregroundColor: Color(0xFF355782),
+        showProgressBar: true,
         style: ToastificationStyle.minimal,
         type: ToastificationType.error,
         title: Text("Email rate limit exceeded"),
@@ -104,14 +106,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
         autoCloseDuration: Duration(seconds: 3),
         context: context,
         foregroundColor: Color(0xFF355782),
+        showProgressBar: true,
         style: ToastificationStyle.minimal,
         type: ToastificationType.error,
         title: Text("No internet connection"),
         description: Text("Cannot access internet"),
       );
+    }else if (e.contains("over_email_send_rate_limit")) {
+      toastification.show(
+        autoCloseDuration: Duration(seconds: 3),
+        context: context,
+        foregroundColor: Color(0xFF355782),
+        showProgressBar: true,
+        style: ToastificationStyle.minimal,
+        type: ToastificationType.warning,
+        title: Text("Cannot resend otp immediately"),
+        description: Text("Please try after some time"),
+      );
     } else {
       errorNote(e, typ: ToastificationType.error);
+      
     }
+    print(e);
   }
 
   void errorNote(
@@ -122,6 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       title: Text(mess),
       style: ToastificationStyle.minimal,
+      showProgressBar: true,
       type: typ,
       backgroundColor: Color(0xFFF7F8F0),
       foregroundColor: Color(0xFF355782),
@@ -246,6 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             } else if (value.length >= 6) {
                               return null;
                             }
+                            return null;
                           },
                         ),
                       ),

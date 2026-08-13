@@ -5,7 +5,7 @@ import 'package:registra/services/expense_service.dart';
 final _formKey = GlobalKey<FormState>();
 
 class expensePage extends StatefulWidget {
-  expensePage({super.key});
+  const expensePage({super.key});
 
   @override
   State<expensePage> createState() => _expensePageState();
@@ -42,6 +42,7 @@ class _expensePageState extends State<expensePage> {
     final amount = double.tryParse(amountController.text);
     try {
       await supabase.from('expense_history').insert({
+        'user_id':supabase.auth.currentUser!.id,
         'note': note,
         'amount': amount,
         'category': selectedCategory.toLowerCase(),
@@ -70,6 +71,7 @@ class _expensePageState extends State<expensePage> {
       fontSize: 16,
     ),
   );
+  @override
   Widget build(context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8F0),

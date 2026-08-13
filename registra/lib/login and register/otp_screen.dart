@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:registra/main.dart';
+import 'package:registra/login%20and%20register/profile.dart';
 import 'package:registra/services/auth_services.dart';
 import 'package:pinput/pinput.dart';
 import 'package:toastification/toastification.dart';
@@ -34,10 +34,12 @@ class _OtpScreenState extends State<OtpScreen> {
       }
     });
   }
-
-  initState() {
-    startResendTimer();
-  }
+ 
+  @override
+void initState() {
+  super.initState();
+  startResendTimer();
+}
 
   @override
   void dispose() {
@@ -56,19 +58,71 @@ class _OtpScreenState extends State<OtpScreen> {
       return;
     }
     if (error != null) {
-      toastification.show(
-        context: context,
-        title: Text(error.toString()),
-        type: ToastificationType.error,
-        backgroundColor: Color(0xFFF7F8F0),
-        foregroundColor: Color(0xFF355782),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
+      if (error.contains("otp_expired")) {
+        toastification.show(
+          context: context,
+          title: Text("Invalid OTP"),
+          description: Text(
+            "Given OTP has either expired or is invalid, please try again",
+          ),
+          type: ToastificationType.error,
+          backgroundColor: Color(0xFFF7F8F0),
+          foregroundColor: Color(0xFF355782),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      } else if (error.contains("request_timeout")) {
+        toastification.show(
+          autoCloseDuration: Duration(seconds: 3),
+          context: context,
+          foregroundColor: Color(0xFF355782),
+          type: ToastificationType.error,
+          title: Text("Request timeout"),
+          description: Text("Request took too long, please try again later"),
+        );
+      } else if (error.contains("errno = 11001")) {
+        toastification.show(
+          autoCloseDuration: Duration(seconds: 3),
+          context: context,
+          foregroundColor: Color(0xFF355782),
+          type: ToastificationType.error,
+          title: Text("No internet connection"),
+          description: Text("Cannot access internet"),
+        );
+      } else if (error.contains("over_email_send_rate_limit")) {
+        toastification.show(
+          autoCloseDuration: Duration(seconds: 3),
+          context: context,
+          foregroundColor: Color(0xFF355782),
+          style: ToastificationStyle.minimal,
+          type: ToastificationType.warning,
+          title: Text("Cannot resend otp immediately"),
+          description: Text("Please try after some time"),
+        );
+      } else if (error.contains("email rate limit exceeded")) {
+        toastification.show(
+          autoCloseDuration: Duration(seconds: 3),
+          context: context,
+          foregroundColor: Color(0xFF355782),
+          style: ToastificationStyle.minimal,
+          type: ToastificationType.error,
+          title: Text("Email rate limit exceeded"),
+          description: Text("please try again later"),
+        );
+      } else {
+        toastification.show(
+          context: context,
+          description: Text(error.toString()),
+          type: ToastificationType.error,
+          backgroundColor: Color(0xFFF7F8F0),
+          foregroundColor: Color(0xFF355782),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      }
       otpCont.clear();
     } else {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => HomePage()),
+        MaterialPageRoute(builder: (_) => ProfilePage()),
         (route) => false,
       );
     }
@@ -140,21 +194,24 @@ class _OtpScreenState extends State<OtpScreen> {
                 Column(
                   children: [
                     Row(
-                     mainAxisSize: MainAxisSize.min,
-                      children:[Text(
-                      "${widget.email}",
-                      style: style(size: 15),
-                      textAlign: TextAlign.center,
-                      softWrap: true,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "${widget.email}",
+                          style: style(size: 15),
+                          textAlign: TextAlign.center,
+                          softWrap: true,
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(Icons.edit_rounded),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: Icon(Icons.edit_rounded),
-                    ),]),
                   ],
-                )
+                ),
               ],
             ),
             SizedBox(

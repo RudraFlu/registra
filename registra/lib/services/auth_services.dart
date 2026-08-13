@@ -1,21 +1,52 @@
 import 'package:flutter/painting.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+final supabase = Supabase.instance.client;
 class AuthService {
-  final supabase = Supabase.instance.client;
-
   Future<String?> signUp(String email, String password) async {
     try {
-      await supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
+      await supabase.auth.signUp(email: email, password: password);
       return null;
     } catch (e) {
       return e.toString();
     }
   }
+
+  Future<String?> signIn(String email, String password) async {
+    try {
+      await supabase.auth.signInWithPassword(email: email, password: password);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<void> signOut() async {
+    await supabase.auth.signOut();
+  }
+
+  User? get currentUser => supabase.auth.currentUser;
+
+
+  Future<String?> resetPassword(String email) async {
+    try {
+      await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'registra://reset-password',
+      );
+
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+  Future<void> updatePassword(String newPassword) async {
+  await supabase.auth.updateUser(
+    UserAttributes(
+      password: newPassword,
+    ),
+  );
+}
 
   Future<String?> resendOtp(String email) async {
     try {
@@ -38,23 +69,7 @@ class AuthService {
       return e.toString();
     }
   }
-
-  Future<String?> signIn(String email, String password) async {
-    try {
-      await supabase.auth.signInWithPassword(email: email, password: password);
-      return null;
-    } catch (e) {
-      return e.toString();
-    }
-  }
-
-  Future<void> signOut() async {
-    await supabase.auth.signOut();
-  }
-
-  User? get currentUser => supabase.auth.currentUser;
 }
-
 TextStyle style({
   double size = 16,
   FontWeight ft = FontWeight.normal,
