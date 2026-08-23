@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:registra/Homepage/home.dart';
+import 'package:registra/main.dart';
 import 'package:registra/avatar/avatar_selection.dart';
 import 'package:registra/avatar/profile_avatar.dart';
 import 'package:registra/services/avatar_services.dart';
@@ -23,6 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final avaService = AvatarServices();
   bool? available;
   bool isAvailable = false;
+  bool isLoading = false;
   String? selectedAvatar;
   File? selectedImage;
   @override
@@ -31,6 +32,23 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUsername();
     final random = Random();
     selectedAvatar = presetAvatars[random.nextInt(presetAvatars.length)];
+  }
+
+  bool checkFields() {
+    if (displayNameController.text.trim().isEmpty ||
+        usernameController.text.trim().isEmpty) {
+      toastification.show(
+        autoCloseDuration: Duration(seconds: 3),
+        context: context,
+        showProgressBar: true,
+        foregroundColor: Color(0xFF355782),
+        type: ToastificationType.warning,
+        title: Text("Missing Credentials"),
+        description: Text("Please enter all required fields"),
+      );
+      return false;
+    }
+    return true;
   }
 
   Future<void> _loadUsername() async {
@@ -84,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             MaterialPageRoute(
                               builder: (_) => AvatarPickerPage(
                                 currentAvatar: selectedAvatar,
-                                currentImage: selectedImage
+                                currentImage: selectedImage,
                               ),
                             ),
                           );
@@ -202,52 +220,65 @@ class _ProfilePageState extends State<ProfilePage> {
                   SizedBox(
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (displayNameController.text.trim().isEmpty) {
-                          toastification.show(
-                            autoCloseDuration: Duration(seconds: 3),
-                            context: context,
-                            showProgressBar: true,
-                            foregroundColor: Color(0xFF355782),
-                            type: ToastificationType.warning,
-                            title: Text("Missing Credentials"),
-                            description: Text(
-                              "Please enter all required fields",
-                            ),
-                          );
-                          return;
-                        }
-
-                        if (usernameController.text.trim().isEmpty) {
-                          toastification.show(
-                            autoCloseDuration: Duration(seconds: 3),
-                            context: context,
-                            showProgressBar: true,
-                            foregroundColor: Color(0xFF355782),
-                            type: ToastificationType.warning,
-                            title: Text("Missing Credentials"),
-                            description: Text(
-                              "Please enter all required fields",
-                            ),
-                          );
-                          return;
-                        }
+                        final avai = await profservice.usernameAvailable(
+                          usernameController.text.trim(),
+                        );
+                        setState(() {
+                          available = avai;
+                          isAvailable = avai;
+                        });
+                        if (!checkFields()) return;
                         if (!isAvailable) return;
-                        final avatarType =
-                            selectedAvatar!.startsWith("presets/")
-                            ? "preset"
-                            : "uploaded";
-                        await profservice.createProfile(
-                          displayName: displayNameController.text,
-                          username: usernameController.text,
-                          avatarType: avatarType,
-                          avatarPath: selectedAvatar!,
-                        );
+                        setState(() {
+                          isLoading = true;
+                        });
+                        try {
+                          if (selectedImage != null) {
+                            final path = await AvatarServices().uploadAvatar(
+                              selectedImage!,
+                            );
 
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => HomePage()),
-                          (route) => false,
-                        );
+                            if (path != null) {
+                            await profservice.createProfile(
+                            displayName: displayNameController.text,
+                            username: usernameController.text,
+                          );
+                              await AvatarServices().saveAvatarSelection(
+                                avatarType: "custom",
+                                avatarPath: path,
+                              );
+                            }
+                          } else if (selectedAvatar != null) {
+                          await profservice.createProfile(
+                            displayName: displayNameController.text,
+                            username: usernameController.text,
+                          );
+                            await AvatarServices().saveAvatarSelection(
+                              avatarType: "preset",
+                              avatarPath: selectedAvatar!,
+                            );
+                          }
+                          if (!mounted) return;
+
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => MainPage()),
+                            (route) => false,
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.error,
+                            title: const Text("Couldn't create profile"),
+                            description: Text(e.toString()),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => isLoading = false);
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xff355782),

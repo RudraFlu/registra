@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:registra/Homepage/home.dart';
+import 'package:registra/main.dart';
 import 'package:registra/login%20and%20register/otp_screen.dart';
 import 'package:registra/login%20and%20register/profile.dart';
 import 'package:registra/login%20and%20register/registerPage.dart';
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (exists) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomePage()),
+            MaterialPageRoute(builder: (_) => MainPage()),
           );
         } else {
           Navigator.pushReplacement(

@@ -13,8 +13,6 @@ Future<bool> usernameAvailable(String username) async {
 Future<void> createProfile({
   required String displayName,
   required String username,
-  required String avatarType,
-  required String avatarPath,
 }) async {
   final user = supabase.auth.currentUser;
 
@@ -25,9 +23,7 @@ Future<void> createProfile({
   await supabase.from('profiles').insert({
     'id': user.id,
     'display_name': displayName.trim(),
-    'username': username.trim().toLowerCase(),
-    'avatar_type': avatarType,
-    'avatar_path': avatarPath,
+    'username': username.trim().toLowerCase()
   });
 }
 Future<bool> profileExists() async {

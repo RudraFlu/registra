@@ -7,7 +7,19 @@ class ProfileAvatar extends StatelessWidget {
   final File? imageFile;
   final double radius;
   final VoidCallback? onTap;
+  Future<String?> getImageUrl() async {
+  if (avatarPath == null || avatarPath!.isEmpty) return null;
 
+  if (avatarPath!.startsWith("preset")) {
+    return Supabase.instance.client.storage
+        .from("avatar-presets")
+        .getPublicUrl(avatarPath!);
+  }
+
+  return await Supabase.instance.client.storage
+      .from("avatar-custom")
+      .createSignedUrl(avatarPath!, 3600);
+}
   const ProfileAvatar({
     super.key,
     this.avatarPath,
@@ -17,29 +29,39 @@ class ProfileAvatar extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context){
-    ImageProvider? image;
     if(imageFile != null){
-      image = FileImage(imageFile!);
+     return GestureDetector(
+      onTap: onTap,
+      child: CircleAvatar(
+        radius: radius,
+        backgroundImage: FileImage(imageFile!),
+      ),
+    );
     }
-    else if (avatarPath != null && avatarPath!.isNotEmpty){
-      final url = Supabase.instance.client.storage
-          .from('avatar')
-          .getPublicUrl(avatarPath!);
-
-      image = NetworkImage(url);
-    }
+     if (avatarPath == null || avatarPath!.isEmpty) {
     return GestureDetector(
       onTap: onTap,
       child: CircleAvatar(
         radius: radius,
-        backgroundImage: image,
-        child: image == null
-            ? Icon(
-                Icons.person,
-                size: radius,
-              )
-            : null,
+        child: Icon(Icons.person, size: radius),
       ),
     );
+  } return FutureBuilder<String?>(
+    future: getImageUrl(),
+    builder: (context, snapshot) {
+      return GestureDetector(
+        onTap: onTap,
+        child: CircleAvatar(
+          radius: radius,
+          backgroundImage: snapshot.hasData
+              ? NetworkImage(snapshot.data!)
+              : null,
+          child: !snapshot.hasData
+              ? const CircularProgressIndicator(strokeWidth: 2)
+              : null,
+        ),
+      );
+    },
+  );
   }
 }

@@ -47,7 +47,7 @@ class _AvatarPickerPageState extends State<AvatarPickerPage> {
   int currentPage = 0;
   late final List<List<String>> pages = avatarpages();
   @override
-  initState() {
+  void initState() {
     super.initState;
     selectedAvatar = widget.currentAvatar;
     selectedImage = widget.currentImage;
@@ -59,9 +59,11 @@ class _AvatarPickerPageState extends State<AvatarPickerPage> {
     if (selectedImage != null) {
       previewImage = FileImage(selectedImage!);
     } else if (selectedAvatar != null) {
-      previewImage = NetworkImage(
-        supabase.storage.from('avatar').getPublicUrl(selectedAvatar!),
-      );
+       previewImage = NetworkImage(
+    supabase.storage
+        .from('avatar-presets')
+        .getPublicUrl(selectedAvatar!),
+  );
     }
     return Scaffold(
       appBar: AppBar(
@@ -182,7 +184,7 @@ class _AvatarPickerPageState extends State<AvatarPickerPage> {
                     itemBuilder: (context, index) {
                       final avatar = pages[pageIndex][index];
                       final imageUrl = supabase.storage
-                          .from('avatar')
+                          .from('avatar-presets')
                           .getPublicUrl(avatar);
                       return GestureDetector(
                         onTap: () {

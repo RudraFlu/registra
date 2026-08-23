@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:registra/Homepage/home.dart';
 import 'package:registra/login%20and%20register/profile.dart';
 import 'package:registra/login%20and%20register/login.dart';
@@ -52,7 +53,9 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'registra',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
+      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+      textTheme: GoogleFonts.poppinsTextTheme()
+      ),
       home: LoginScreen(),
     );
   }
