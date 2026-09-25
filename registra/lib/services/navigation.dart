@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:registra/Homepage/account.dart';
+import 'package:registra/Homepage/accounts/account.dart';
 import 'package:registra/Homepage/friends.dart';
 import 'package:registra/Homepage/groups.dart';
 import 'package:registra/Homepage/home.dart';

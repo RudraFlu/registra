@@ -6,9 +6,9 @@ import 'package:registra/avatar/avatar_type.dart';
 import 'package:registra/services/avatar_services.dart';
 
 class AvatarPickerPage extends StatefulWidget {
-  String? currentAvatar;
-  File? currentImage;
-  AvatarPickerPage({super.key, this.currentAvatar, this.currentImage});
+  final String? currentAvatar;
+  final File? currentImage;
+  const AvatarPickerPage({super.key, this.currentAvatar, this.currentImage});
 
   @override
   State<AvatarPickerPage> createState() => _AvatarPickerPageState();

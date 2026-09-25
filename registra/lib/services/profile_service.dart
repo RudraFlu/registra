@@ -1,70 +1,90 @@
 import 'package:registra/services/auth_services.dart';
 import 'dart:math';
+
 class ProfileService {
-Future<bool> usernameAvailable(String username) async {
-  final result = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
+  Future<bool> usernameAvailable(String username) async {
+    final result = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
 
-  return result == null;
-}
-Future<void> createProfile({
-  required String displayName,
-  required String username,
-}) async {
-  final user = supabase.auth.currentUser;
-
-  if (user == null) {
-    throw Exception("No authenticated user found.");
+    return result == null;
   }
 
-  await supabase.from('profiles').insert({
-    'id': user.id,
-    'display_name': displayName.trim(),
-    'username': username.trim().toLowerCase()
-  });
-}
-Future<bool> profileExists() async {
-  final user = supabase.auth.currentUser;
+  Future<void> createProfile({
+    required String displayName,
+    required String username,
+  }) async {
+    final user = supabase.auth.currentUser;
 
-  if (user == null) return false;
+    if (user == null) {
+      throw Exception("No authenticated user found.");
+    }
 
-  final profile = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle();
+    await supabase.from('profiles').insert({
+      'id': user.id,
+      'display_name': displayName.trim(),
+      'username': username.trim().toLowerCase(),
+      'email': user.email,
+    });
+  }
 
-  return profile != null;
-}
-Future<Map<String, dynamic>?> getProfile() async {
-  final user = supabase.auth.currentUser;
+  Future<bool> profileExists() async {
+    final user = supabase.auth.currentUser;
 
-  if (user == null) return null;
+    if (user == null) return false;
 
-  final profile = await supabase
-      .from('profiles')
-      .select()
-      .eq('id', user.id)
-      .single();
+    final profile = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
 
-  return profile;
-}
-Future<String> generateAvailableUsername() async {
-  while (true) {
-    final username = UserIDGen.randomUsername();
+    return profile != null;
+  }
 
-    final available = await usernameAvailable(username);
+  Future<Map<String, dynamic>?> getProfile() async {
+    final user = supabase.auth.currentUser;
 
-    if (available) {
-      return username.toString();
+    if (user == null) return null;
+
+    final profile = await supabase
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .single();
+
+    return profile;
+  }
+
+  Future<void> updateEmail(String newEmail) async {
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception("No authenticated user found.");
+    }
+
+    await supabase
+        .from('profiles')
+        .update({'email': newEmail.trim()})
+        .eq('id', user.id);
+  }
+
+  Future<String> generateAvailableUsername() async {
+    while (true) {
+      final username = UserIDGen.randomUsername();
+
+      final available = await usernameAvailable(username);
+
+      if (available) {
+        return username.toString();
+      }
     }
   }
 }
-}
-class UserIDGen{
+
+class UserIDGen {
   static final Random random = Random();
 
   static const List<String> adj = [
@@ -87,9 +107,9 @@ class UserIDGen{
     "lucky",
     "sad",
     "plumpy",
-    "skibidi"
+    "skibidi",
   ];
-   static const List<String> nouns = [
+  static const List<String> nouns = [
     "wallet",
     "coin",
     "ledger",
@@ -113,11 +133,11 @@ class UserIDGen{
     "cucumber",
     "cabbage",
     "strawberry",
-    "berry"
+    "berry",
   ];
   static String randomUsername() {
     return "${adj[random.nextInt(adj.length)]}"
         "${nouns[random.nextInt(nouns.length)]}"
-        "${100+random.nextInt(900)}";
+        "${100 + random.nextInt(900)}";
   }
 }

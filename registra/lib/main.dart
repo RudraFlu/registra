@@ -3,25 +3,26 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:registra/Homepage/home.dart';
-import 'package:registra/login%20and%20register/profile.dart';
+import 'package:registra/avatar/profile_avatar.dart';
 import 'package:registra/login%20and%20register/login.dart';
 import 'package:registra/services/deep_links.dart';
 import 'package:registra/services/navigation.dart';
+import 'package:registra/services/profile_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:registra/Homepage/account.dart';
+import 'package:registra/Homepage/accounts/account.dart';
 import 'package:registra/Homepage/friends.dart';
 import 'package:registra/Homepage/groups.dart';
 import 'package:registra/Homepage/insights.dart';
-    final deeplinks = DeepLinkService();
+
+final deeplinks = DeepLinkService();
 Future<void> main() async {
   WidgetsBinding wb = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: wb);
 
-  
   await dotenv.load(fileName: "keys.env");
 
   await Supabase.initialize(
-  url: dotenv.env['Proj_url']!,
+    url: dotenv.env['Proj_url']!,
     anonKey: dotenv.env['Proj_anonKey']!,
   );
   await deeplinks.init();
@@ -53,8 +54,9 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'registra',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      textTheme: GoogleFonts.poppinsTextTheme()
+      theme: ThemeData(
+        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        textTheme: GoogleFonts.poppinsTextTheme(),
       ),
       home: LoginScreen(),
     );
@@ -69,40 +71,80 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
- int currentIndex = 0;
-List<Widget>? actions(){
-
-  if(currentIndex==0){
-    return [
-       IconButton(onPressed: (){}, icon: Icon(Icons.search_outlined)),   
-          SizedBox(width: 10),
-        ];
-  }else if(currentIndex==1){
-    return [IconButton(onPressed: (){}, icon: Icon(Icons.group_add_outlined)),
-      SizedBox(width: 10,)
-    ];
-  }else if(currentIndex==2){
-    return [IconButton(onPressed: (){}, icon: Icon(Icons.person_add_alt_1_outlined)),SizedBox(width: 10,)];
-  }else if(currentIndex==3){
-    return [IconButton(onPressed: (){}, icon: Icon(Icons.download_for_offline_outlined)),SizedBox(width: 10,)];
-  }else if(currentIndex==4){
-    return [IconButton(onPressed: (){}, icon: Icon(Icons.color_lens_outlined)),SizedBox(width: 10,),IconButton(onPressed: (){}, icon: Icon(Icons.settings)),SizedBox(width: 10,)];
-  }
-  throw{Exception("Wrong index")};
-}
-  List<Widget> pages = const [
-    HomePage(),
-    GroupsPage(),
-    FriendsPage(),
-    InsightPage(),
-    AccountsPage(),
-  ];
   @override
-    Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    loadProfile();
+    pages = const [
+      HomePage(),
+      GroupsPage(),
+      FriendsPage(),
+      InsightPage(),
+      AccountsPage(),
+    ];
+  }
+  late final List<Widget> pages;
+  bool isLoading = true;
+  Map<String, dynamic>? profile;
+  int currentIndex = 0;
+  String? avatarPath;
+  String? avatarType;
+  final ProfileService profService = ProfileService();
+  Future<void> loadProfile()async{
+    try{
+      final data = await profService.getProfile();
+      if(!mounted)return;
+      setState((){
+        profile = data;
+        isLoading = false;
+        avatarPath = profile?['avatar_path'];
+        avatarType = profile?['avatar_type'];
+      });
+    }catch(e){
+      throw Exception(e);
+    }
+  }
+  List<Widget>? actions() {
+    if (currentIndex == 0) {
+      return [
+        IconButton(onPressed: () {}, icon: Icon(Icons.search_outlined)),
+        SizedBox(width: 10),
+      ];
+    } else if (currentIndex == 1) {
+      return [
+        IconButton(onPressed: () {}, icon: Icon(Icons.group_add_outlined)),
+        SizedBox(width: 10),
+      ];
+    } else if (currentIndex == 2) {
+      return [
+        IconButton(
+          onPressed: () {},
+          icon: Icon(Icons.person_add_alt_1_outlined),
+        ),
+        SizedBox(width: 10),
+      ];
+    } else if (currentIndex == 3) {
+      return [
+        IconButton(
+          onPressed: () {},
+          icon: Icon(Icons.download_for_offline_outlined),
+        ),
+        SizedBox(width: 10),
+      ];
+    } else if (currentIndex == 4) {
+      return [
+        IconButton(onPressed: () {}, icon: Icon(Icons.color_lens_outlined)),
+        SizedBox(width: 10),
+        IconButton(onPressed: () {}, icon: Icon(Icons.settings)),
+        SizedBox(width: 10),
+      ];
+    }
+    throw {Exception("Wrong index")};
+  }
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: pages[currentIndex],
-      ),
+      body: IndexedStack(index: currentIndex, children: pages),
 
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Color(0xFFF7F8F0),
@@ -118,29 +160,21 @@ List<Widget>? actions(){
 
         type: BottomNavigationBarType.fixed,
 
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: "Groups",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Friends",
-          ),
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: "Groups"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Friends"),
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
             label: "Insight",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.manage_accounts),
+            icon: ProfileAvatar(avatarPath: avatarPath, radius: 14),
             label: "Account",
           ),
         ],
-      ),appBar: AppBar(
+      ),
+      appBar: AppBar(
         toolbarHeight: 80,
         title: Image.asset('assets/images/logo.png', height: 70),
         backgroundColor: Color(0xFFF7F8F0),
@@ -153,7 +187,7 @@ List<Widget>? actions(){
             color: Color(0xFF355782),
           ),
         ),
-        actions: actions()
+        actions: actions(),
       ),
     );
   }
